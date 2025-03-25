@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Viewer as CesiumViewer, Entity, TerrainProvider } from "cesium";
 
+const CESIUM_CONTAINER_ID = "cesiumContainer";
 
 const CesiumMap = () => {
   const viewerContainer = useRef(null);
@@ -9,7 +10,7 @@ const CesiumMap = () => {
   useEffect(() => {
 
     const initializeGlobe = () => {
-      const viewer = new CesiumViewer("cesiumContainer");
+      const viewer = new CesiumViewer(CESIUM_CONTAINER_ID);
       setCesiumViewer(viewer) 
     }
     if (!cesiumViewer ) {
@@ -19,9 +20,8 @@ const CesiumMap = () => {
 
   return (
     <div
-      id="cesiumContainer"
+      id={CESIUM_CONTAINER_ID}
       ref={viewerContainer}
-      style={{ width: '100%', height: '100%' }}
     />
   );
 };
