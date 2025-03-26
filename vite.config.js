@@ -26,6 +26,8 @@ export default defineConfig({
         { src: `${cesiumSource}/Workers`, dest: cesiumBaseUrl },
         { src: `${cesiumSource}/Assets`, dest: cesiumBaseUrl },
         { src: `${cesiumSource}/Widgets`, dest: cesiumBaseUrl },
+        // Also copy test tileset data
+        { src: `data`, dest: cesiumBaseUrl },
       ],
     }),
   ],
