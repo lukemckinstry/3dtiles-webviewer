@@ -7,6 +7,7 @@
 }
 
 
+
 #sidebar {
   background-color: #fff;
   position: absolute;
@@ -51,4 +52,6 @@
 
 .sidebar {
   margin-top: 47px;
+  height: 100vh;
+  overflow: scroll;
 }
