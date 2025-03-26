@@ -25,7 +25,7 @@
 
 .header {
   background-color: #c9aeae;
-  height: 47px;;
+  height: 47px;
   position: absolute;
   left: 0;
   right: 0;
@@ -47,4 +47,8 @@
 
 .header-button-container {
 
+}
+
+.sidebar {
+  margin-top: 47px;
 }

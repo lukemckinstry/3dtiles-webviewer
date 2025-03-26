@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@itwin/itwinui-react": "^3.17.3",
+    "@itwin/itwinui-react": "^5.0.0-alpha.11",
     "cesium": "^1.127.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
