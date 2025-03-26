@@ -1,11 +1,11 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Viewer as CesiumViewer, Entity, TerrainProvider } from "cesium";
 
 const CESIUM_CONTAINER_ID = "cesiumContainer";
 
-const CesiumMap = () => {
+const CesiumMap = ({ cesiumViewer, setCesiumViewer }) => {
   const viewerContainer = useRef(null);
-  const [cesiumViewer, setCesiumViewer] = useState();
+  //const [cesiumViewer, setCesiumViewer] = useState();
 
   useEffect(() => {
 
@@ -16,7 +16,7 @@ const CesiumMap = () => {
     if (!cesiumViewer ) {
       initializeGlobe()
     }
-  }, [cesiumViewer]);
+  }, [cesiumViewer, setCesiumViewer]);
 
   return (
     <div
