@@ -1,5 +1,5 @@
 import React from "react";
-import { Button } from '@itwin/itwinui-react';
+import { Button } from '@itwin/itwinui-react/bricks';
 
 let Header = () => {
     const handleClick = () => {

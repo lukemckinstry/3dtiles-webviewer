@@ -3,19 +3,17 @@ import Sidebar from './components/Sidebar'
 import Header from './components/Header';
 import './App.css'
 import "cesium/Build/Cesium/Widgets/widgets.css";
-
-import { ThemeProvider } from '@itwin/itwinui-react';
-import '@itwin/itwinui-react/styles.css';
+import { Root } from '@itwin/itwinui-react/bricks';
 
 function App() {
 
   return (
     <>
-      <ThemeProvider>
+      <Root colorScheme='dark' density='medium'>
         <Sidebar/>
         <Header/>
         <CesiumMap/>
-      </ThemeProvider>
+      </Root>
     </>
   )
 }
