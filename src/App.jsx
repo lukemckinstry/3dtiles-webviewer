@@ -9,13 +9,11 @@ function App() {
 
   return (
     <>
-      {/* <ThemeProvider> */}
       <Root colorScheme='dark' density='medium'>
         <Sidebar/>
         <Header/>
         <CesiumMap/>
       </Root>
-      {/* </ThemeProvider> */}
     </>
   )
 }
