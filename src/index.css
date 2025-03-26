@@ -51,4 +51,6 @@
 
 .sidebar {
   margin-top: 47px;
+  height: 100vh;
+  overflow: scroll;
 }

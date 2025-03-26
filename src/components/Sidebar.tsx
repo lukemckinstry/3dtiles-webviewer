@@ -4,30 +4,12 @@ import { parseTileset, LevelOfDetail } from '../tilesetParser';
 
 const tilesetPath = './cesiumStatic/data/SanFran_Street_level_Ferry_building/tileset.json';
 const tilesetData = await parseTileset(tilesetPath, []);
+for (let i = 0; i < tilesetData.length; i++) {
+  if (!tilesetData[i]) {
+    tilesetData[i] = { tiles: [], expanded: false, selected: false, level: i };
+  }
+}
 // console.log(tilesetData);
-
-const testData = [
-  {
-    id: 'Node-0',
-    label: 'Node 0',
-    selected: false,
-    expanded: true,
-  },
-  {
-    id: 'Node-1',
-    label: 'Node 1',
-    selected: false,
-    expanded: true,
-    subItems: [{ id: 'Subnode-1', label: 'Subnode 1', selected: false }],
-  },
-  {
-    id: 'Node-2',
-    label: 'Node 2',
-    selected: false,
-    expanded: true,
-    subItems: [{ id: 'Subnode-2', label: 'Subnode 2', selected: false }],
-  },
-];
 
 let Sidebar = () => {
   const [data, setData] = React.useState(tilesetData);
@@ -37,16 +19,17 @@ let Sidebar = () => {
     <Tree.Root>
       {data.map((item, index, items) => {
         const handleSelection = () => {
+          item
           console.log('handleSelection');
         }
         
         const handleExpanded = () => {
           console.log('handleExpanded');
-          // const oldExpanded = data[index].expanded;
-          // if (oldExpanded === undefined) return;
-          // const newData = [...data];
-          // newData[index].expanded = !oldExpanded;
-          // setData(newData);
+          const oldExpanded = data[index].expanded;
+          if (oldExpanded === undefined) return;
+          const newData = [...data];
+          newData[index].expanded = !oldExpanded;
+          setData(newData);
         }
 
         return (
