@@ -1,23 +1,20 @@
+import { Matrix4, Model, Math as CesiumMath, HeadingPitchRange } from "cesium";
 import React, { useMemo } from 'react';
 import { Tree } from '@itwin/itwinui-react/bricks';
+
 import { parseTileset, LevelOfDetail } from '../tilesetParser';
 
-import { Matrix4, Model, Math as CesiumMath, HeadingPitchRange } from "cesium";
-
-
 const tilesetPath = './cesiumStatic/data/SanFran_Street_level_Ferry_building/tileset.json';
-const tilesetData = await parseTileset(tilesetPath, []);
+const tilesetData: LevelOfDetail[] = await parseTileset(tilesetPath, []);
+
 for (let i = 0; i < tilesetData.length; i++) {
   if (!tilesetData[i]) {
     tilesetData[i] = { tiles: [], expanded: false, selected: false, level: i };
   }
 }
-// console.log(tilesetData);
 
 let Sidebar = (cesiumViewer) => {
   const [data, setData] = React.useState(tilesetData);
-
-  console.log("Sidebar cesiumViewer ", cesiumViewer)
 
   return (
     <div className='sidebar'>
