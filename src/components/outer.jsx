@@ -4,17 +4,15 @@ import Header from './Header';
 import React, { useState } from 'react';
 
 function Outer() {
-
   const [cesiumViewer, setCesiumViewer] = useState();
   
-
   return (
     <>
-        <Sidebar viewer={cesiumViewer}/>
-        <Header/>
-        <CesiumMap viewer={cesiumViewer} setCesiumViewer={setCesiumViewer} />
+      <Sidebar viewer={cesiumViewer} />
+      <Header />
+      <CesiumMap viewer={cesiumViewer} setCesiumViewer={setCesiumViewer} />
     </>
   )
 }
 
-export default Outer
+export default Outer;
