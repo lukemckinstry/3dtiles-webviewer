@@ -3,7 +3,8 @@ import React, { useEffect, useMemo } from 'react';
 import { Tree } from '@itwin/itwinui-react/bricks';
 import { parseTileset, LevelOfDetail } from '../tilesetParser';
 
-const tilesetPath = './cesiumStatic/data/SanFran_Street_level_Ferry_building/tileset.json';
+const tilesetPath = 'cesiumStatic/data/SanFran_Street_level_Ferry_building/tileset.json';
+// const tilesetPath = './cesiumStatic/data/Metrostation.bim-tiles/tileset.json';
 let tilesetLoaded = false;
 
 // const tilesetData: LevelOfDetail[] = await parseTileset(tilesetPath, []);
@@ -40,23 +41,22 @@ let Sidebar = (cesiumViewer) => {
       function trackTile(tile: any) {
         const level = parseInt(tile._depth);
         const index = level - 1;
-        const uri = tile.content.url.split('/').slice(-2).join('/');
+        // Get just tile name, without full URL and query string
+        const displayName = tile.content.url.split('/').pop().split('?')[0];
+        const tileData = {
+          displayName: displayName,
+          uri: tile.content.url,
+          selected: false,
+        };
+
         if (lods[index]) {
-          lods[index].tiles.push({
-            uri: uri,
-            selected: false,
-          });
+          lods[index].tiles.push(tileData);
         } else {
           lods[index] = {
             level: level,
             expanded: false,
             selected: false,
-            tiles: [
-              {
-                uri: uri,
-                selected: false,
-              },
-            ],
+            tiles: [ tileData ],
           };
         }
       }
@@ -102,22 +102,21 @@ let Sidebar = (cesiumViewer) => {
       {data.map((item, index, items) => {
         const handleSelection = async () => {
           console.log("tiles", item.tiles);
-
-          const gltfPos = [0.8443837640659682, -0.5357387973460459, 0.0, 0.0, 0.32832660036003297, 0.5174791372742712, 0.7902005985709575, 0.0, -0.42334111834053034, -0.667232555788526, 0.6128482797708588, 0.0, -2703514.1639288412, -4261038.79165873, 3887533.1514879903, 1.0];
-          let transformToRoot = Matrix4.unpack(gltfPos);
-          const prefix = "./cesiumStatic/data/SanFran_Street_level_Ferry_building/";
-          const tNames = item.tiles.map(x => x.uri);
+          
+          handleExpanded();
           const { viewer } = cesiumViewer;
           // Clear previous models
           viewer.scene.primitives.removeAll();
 
+          const gltfPos = [0.8443837640659682, -0.5357387973460459, 0.0, 0.0, 0.32832660036003297, 0.5174791372742712, 0.7902005985709575, 0.0, -0.42334111834053034, -0.667232555788526, 0.6128482797708588, 0.0, -2703514.1639288412, -4261038.79165873, 3887533.1514879903, 1.0];
+          let transformToRoot = Matrix4.unpack(gltfPos);
+
           let model;
-          for (const tU of tNames) {
-            const modelURL = prefix.concat(tU);
+          for (const tile of item.tiles) {
             try {
               model = viewer.scene.primitives.add(
                 await Model.fromGltfAsync({
-                  url: modelURL,
+                  url: tile.uri,
                   modelMatrix: transformToRoot,
                 }),
               );
@@ -206,7 +205,7 @@ let Sidebar = (cesiumViewer) => {
                 aria-level={2}
                 aria-posinset={childIndex + 1}
                 aria-setsize={children.length}
-                label={child.uri}
+                label={child.displayName}
                 selected={child.selected}
                 // onSelectedChange={handleSelection}
               />

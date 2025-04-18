@@ -3,6 +3,7 @@ export interface LevelOfDetail {
   expanded: boolean,
   selected: boolean,
   tiles: {
+    displayName: string,
     uri: string,
     selected: boolean
   }[]
@@ -28,6 +29,7 @@ async function parseNode(node: any, path: string, lods: LevelOfDetail[]): Promis
 
       if (lods[level]) {
         lods[level].tiles.push({
+          displayName: node.content.uri,
           uri: node.content.uri,
           selected: false,
         });
@@ -38,6 +40,7 @@ async function parseNode(node: any, path: string, lods: LevelOfDetail[]): Promis
           selected: false,
           tiles: [
             {
+              displayName: node.content.uri,
               uri: node.content.uri,
               selected: false,
             },
