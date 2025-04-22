@@ -1,17 +1,14 @@
 #cesiumContainer {
   position: absolute !important;
   left: 330px;
-  top: 47px;
+  top: 0;
   bottom: 0;
   right: 0;
 }
 
-
-
 #sidebar {
   background-color: #fff;
   position: absolute;
-  top: 47px;
   left: 0;
   bottom: 0;
   margin-left: auto;
@@ -51,7 +48,6 @@
 }
 
 .sidebar {
-  margin-top: 47px;
   height: 100vh;
   overflow: scroll;
 }

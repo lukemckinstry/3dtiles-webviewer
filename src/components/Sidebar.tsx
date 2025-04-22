@@ -1,4 +1,4 @@
-import { Matrix4, Model, Math as CesiumMath, HeadingPitchRange, Cesium3DTileset, Cesium3DTile, TileAvailability } from 'cesium';
+import { Matrix4, Model, Math as CesiumMath, HeadingPitchRange, ITwinPlatform, Cesium3DTileset, ITwinData, Matrix3, Cesium3DTile, TileAvailability, Transforms } from 'cesium';
 import React, { useEffect, useMemo } from 'react';
 import { Tree } from '@itwin/itwinui-react/bricks';
 import { parseTileset, LevelOfDetail } from '../tilesetParser';
@@ -6,6 +6,7 @@ import { parseTileset, LevelOfDetail } from '../tilesetParser';
 const tilesetPath = 'cesiumStatic/data/SanFran_Street_level_Ferry_building/tileset.json';
 // const tilesetPath = './cesiumStatic/data/Metrostation.bim-tiles/tileset.json';
 let tilesetLoaded = false;
+let globalTransform;
 
 // const tilesetData: LevelOfDetail[] = await parseTileset(tilesetPath, []);
 // for (let i = 0; i < tilesetData.length; i++) {
@@ -23,17 +24,40 @@ let Sidebar = (cesiumViewer) => {
       if (!viewer?.scene) {
         return;
       }
-      console.log("viewer", viewer)
+      console.log("viewer", viewer);
 
       const lods: LevelOfDetail[] = [];
 
       const tileset = await Cesium3DTileset.fromUrl(tilesetPath);
+
+      // ITwinPlatform.apiEndpoint = "https://qa-ims.bentley.com/";
+      // ITwinPlatform.defaultAccessToken = "";
+      // const tileset = await ITwinData.createTilesetFromIModelId(
+      //   "",
+      // );
+
+      if (!tileset) {
+        return;
+      }
+
       tileset.skipLevelOfDetail = false;
       tileset.maximumScreenSpaceError = 0;
       tileset.preloadWhenHidden = true;
       tileset.show = false;
       tileset.maximumCacheOverflowBytes = 536870912 * 10;
-      console.log("tileset", tileset);
+
+      const enuTransform = Transforms.eastNorthUpToFixedFrame(tileset.boundingSphere.center);
+      const rootTransform = tileset.root.transform
+        ? tileset.root.transform
+        : Matrix4.IDENTITY;
+
+      // Combine the transforms
+      // globalTransform = Matrix4.multiply(enuTransform, rootTransform, new Matrix4());
+      const rotationMatrix = Matrix3.fromRotationZ(CesiumMath.toRadians(-90));
+      const rotationMatrix4x4 = Matrix4.fromRotationTranslation(rotationMatrix);
+
+      // globalTransform = tileset.root.transform;
+      globalTransform = Matrix4.multiply(tileset.root.transform, rotationMatrix4x4, new Matrix4());
 
       viewer.scene.primitives.add(tileset);
       viewer.zoomTo(tileset);
@@ -108,20 +132,17 @@ let Sidebar = (cesiumViewer) => {
           // Clear previous models
           viewer.scene.primitives.removeAll();
 
-          const gltfPos = [0.8443837640659682, -0.5357387973460459, 0.0, 0.0, 0.32832660036003297, 0.5174791372742712, 0.7902005985709575, 0.0, -0.42334111834053034, -0.667232555788526, 0.6128482797708588, 0.0, -2703514.1639288412, -4261038.79165873, 3887533.1514879903, 1.0];
-          let transformToRoot = Matrix4.unpack(gltfPos);
-
           let model;
           for (const tile of item.tiles) {
             try {
               model = viewer.scene.primitives.add(
                 await Model.fromGltfAsync({
                   url: tile.uri,
-                  modelMatrix: transformToRoot,
+                  modelMatrix: globalTransform,
                 }),
               );
             } catch (error) {
-              console.log("error ", error);
+              console.log("error", error);
             }
           }
 
@@ -130,9 +151,9 @@ let Sidebar = (cesiumViewer) => {
             const camera = viewer.camera;
 
             // Zoom to model
-            const controller = viewer.scene.screenSpaceCameraController;
+            // const controller = viewer.scene.screenSpaceCameraController;
             const r = 2.0 * Math.max(model.boundingSphere.radius, camera.frustum.near);
-            controller.minimumZoomDistance = r * 0.5;
+            // controller.minimumZoomDistance = r * 0.5;
 
             const center = model.boundingSphere.center;
             const heading = CesiumMath.toRadians(230.0);
@@ -167,28 +188,28 @@ let Sidebar = (cesiumViewer) => {
               if (!item.expanded) return null;
 
               const handleSelection = async () => {
-                console.log('handleSelection', child.uri );
-                const gltfPos = [0.8443837640659682, -0.5357387973460459, 0.0, 0.0, 0.32832660036003297, 0.5174791372742712, 0.7902005985709575, 0.0, -0.42334111834053034, -0.667232555788526, 0.6128482797708588, 0.0, -2703514.1639288412, -4261038.79165873, 3887533.1514879903, 1.0];
-                let transformToRoot = Matrix4.unpack(gltfPos);
-                const prefix = "./cesiumStatic/data/SanFran_Street_level_Ferry_building/";
-                const modelURL = prefix.concat(child.uri)
-                const {viewer} = cesiumViewer;
-                console.log("viewer ", viewer)
+                console.log('handleSelection', child.uri);
+
+                const { viewer } = cesiumViewer;
+                console.log("viewer", viewer);
+                // Clear previous models
+                viewer.scene.primitives.removeAll();
+
                 try {
                   const model = viewer.scene.primitives.add(
                     await Model.fromGltfAsync({
-                      url: modelURL,
-                      modelMatrix: transformToRoot,
+                      url: child.uri,
+                      modelMatrix: globalTransform,
                     }),
                   );
                   model.readyEvent.addEventListener(() => {
-                    console.log("model ", model  );
+                    console.log("model", model);
                     const camera = viewer.camera;
 
                     // Zoom to model
-                    const controller = viewer.scene.screenSpaceCameraController;
+                    // const controller = viewer.scene.screenSpaceCameraController;
                     const r = 2.0 * Math.max(model.boundingSphere.radius, camera.frustum.near);
-                    controller.minimumZoomDistance = r * 0.5;
+                    // controller.minimumZoomDistance = r * 0.5;
 
                     const center = model.boundingSphere.center;
                     const heading = CesiumMath.toRadians(230.0);
@@ -196,7 +217,7 @@ let Sidebar = (cesiumViewer) => {
                     camera.lookAt(center, new HeadingPitchRange(heading, pitch, r * 7.0));
                   })
                 } catch (error) {
-                  console.log("error ", error)
+                  console.log("error", error)
                 }
               };
 
@@ -207,7 +228,7 @@ let Sidebar = (cesiumViewer) => {
                 aria-setsize={children.length}
                 label={child.displayName}
                 selected={child.selected}
-                // onSelectedChange={handleSelection}
+                onSelectedChange={handleSelection}
               />
             })}
           </React.Fragment>

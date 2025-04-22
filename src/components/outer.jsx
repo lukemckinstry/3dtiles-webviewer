@@ -1,6 +1,5 @@
-import CesiumMap from './CesiumMap'
-import Sidebar from './Sidebar'
-import Header from './Header';
+import CesiumMap from './CesiumMap';
+import Sidebar from './Sidebar';
 import React, { useState } from 'react';
 
 function Outer() {
@@ -9,7 +8,6 @@ function Outer() {
   return (
     <>
       <Sidebar viewer={cesiumViewer} />
-      <Header />
       <CesiumMap viewer={cesiumViewer} setCesiumViewer={setCesiumViewer} />
     </>
   )

@@ -25,3 +25,4 @@ dist-ssr
 
 data/*
 !data/SanFran_Street_level_Ferry_building
+.env
