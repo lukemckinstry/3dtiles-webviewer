@@ -35,8 +35,9 @@
 .sidebar {
   width: 400px;
   height: 100vh;
-  overflow-y: scroll;
-  scrollbar-width: auto;
-  scrollbar-color: auto;
   background-color: var(--ids-color-bg-neutral-base);
+}
+
+.lod-tree {
+  height: 100vh;
 }

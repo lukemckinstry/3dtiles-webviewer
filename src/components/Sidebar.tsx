@@ -115,7 +115,7 @@ let Sidebar = (cesiumViewer) => {
 
   return (
     <div className='sidebar'>
-    <Tree.Root style={{ backgroundColor: 'var(--ids-color-bg-neutral-base)' }}>
+    <Tree.Root className='lod-tree' style={{ backgroundColor: 'var(--ids-color-bg-neutral-base)' }}>
       {data.map((item, index, items) => {
         const handleSelection = async () => {
           console.log("handleSelection", item);
