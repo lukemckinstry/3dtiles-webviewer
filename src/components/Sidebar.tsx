@@ -1,5 +1,5 @@
 import { Matrix4, Model, Math as CesiumMath, HeadingPitchRange, ITwinPlatform, Cesium3DTileset, ITwinData, Matrix3, Cesium3DTile, TileAvailability, Transforms } from 'cesium';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import { Tooltip, Tree } from '@itwin/itwinui-react/bricks';
 import { parseTileset, LevelOfDetail } from '../tilesetParser';
 
@@ -18,6 +18,9 @@ console.log("lods:", tilesetData);
 
 let Sidebar = (cesiumViewer) => {
   const [data, setData] = React.useState<LevelOfDetail[]>(tilesetData);
+  // Format is [lod index, tile index]
+  // If tile index is -1, it means no tile was selected, just entire LOD
+  const [selectedLodIndices, setSelectedLodIndices] = React.useState<number[] | undefined>();
 
   useEffect(() => {
     (async function() {
@@ -119,13 +122,29 @@ let Sidebar = (cesiumViewer) => {
       {data.map((item, index, items) => {
         const handleSelection = async () => {
           console.log("handleSelection", item);
-
-          // const oldSelected = data[index].selected;
-          // const newData = [...data];
-          // newData[index].selected = !oldSelected;
-          // setData(newData);
           
-          handleExpanded();
+          if (!item.expanded) {
+            handleExpanded();
+          }
+
+          if (!item.selected) {
+            const newData = [...data];
+
+             // Reset previous selection
+            if (selectedLodIndices) {
+              const lodIndex = selectedLodIndices[0];
+              newData[lodIndex].selected = false;
+              const tileIndex = selectedLodIndices[1];
+              if (tileIndex !== -1) {
+                newData[lodIndex].tiles[tileIndex].selected = false;
+              }
+            }
+            setSelectedLodIndices([index, -1]);
+
+            newData[index].selected = true;
+            setData(newData);
+          }
+
           const { viewer } = cesiumViewer;
           // Clear previous models
           viewer.scene.primitives.removeAll();
@@ -191,10 +210,23 @@ let Sidebar = (cesiumViewer) => {
               const handleSelection = async () => {
                 console.log('handleSelection', child);
 
-                // const oldSelected = data[index].selected;
-                // const newData = [...data];
-                // newData[index].selected = !oldSelected;
-                // setData(newData);
+                if (!child.selected || (item.selected && child.selected)) {
+                  const newData = [...data];
+
+                  // Reset previous selection
+                  if (selectedLodIndices) {
+                    const lodIndex = selectedLodIndices[0];
+                    newData[lodIndex].selected = false;
+                    const tileIndex = selectedLodIndices[1];
+                    if (tileIndex !== -1) {
+                      newData[lodIndex].tiles[tileIndex].selected = false;
+                    }
+                  }
+                  setSelectedLodIndices([index, childIndex]);
+
+                  newData[index].tiles[childIndex].selected = true;
+                  setData(newData);
+                }
 
                 const { viewer } = cesiumViewer;
                 // Clear previous models

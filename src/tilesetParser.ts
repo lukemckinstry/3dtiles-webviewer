@@ -2,12 +2,14 @@ export interface LevelOfDetail {
   level: number,
   expanded: boolean,
   selected: boolean,
-  tiles: {
-    displayName: string,
-    uri: string,
-    selected: boolean,
-    geometricError?: number,
-  }[]
+  tiles: Tile[]
+}
+
+export interface Tile {
+  displayName: string,
+  uri: string,
+  selected: boolean,
+  geometricError?: number,
 }
 
 export async function parseTileset(path: string, lods: LevelOfDetail[], buckets: number[], depth: number): Promise<LevelOfDetail[]> {
