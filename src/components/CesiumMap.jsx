@@ -14,7 +14,7 @@ const CesiumMap = ({ cesiumViewer, setCesiumViewer }) => {
 
       const viewer = new CesiumViewer(
         CESIUM_CONTAINER_ID,
-        { terrain: Terrain.fromWorldTerrain() }
+        // { terrain: Terrain.fromWorldTerrain() }
       );
       setCesiumViewer(viewer);
     }
