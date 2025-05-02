@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@itwin/itwinui-icons-color-react": "^2.1.0",
     "@itwin/itwinui-react": "^5.0.0-alpha.11",
     "cesium": "^1.127.0",
     "react": "^19.0.0",

@@ -1,7 +1,8 @@
-import { Matrix4, Model, Math as CesiumMath, HeadingPitchRange, ITwinPlatform, Cesium3DTileset, ITwinData, Matrix3, Cesium3DTile, TileAvailability, Transforms } from 'cesium';
+import { Matrix4, Model, Math as CesiumMath, HeadingPitchRange, Cesium3DTileset, Matrix3 } from 'cesium';
 import React, { useEffect } from 'react';
-import { Tooltip, Tree, Button, Label, TextBox } from '@itwin/itwinui-react/bricks';
+import { Tooltip, Tree, Button, Label, TextBox, Text } from '@itwin/itwinui-react/bricks';
 import { parseTileset, LevelOfDetail } from '../tilesetParser';
+import { SvgStatusSuccess } from '@itwin/itwinui-icons-color-react';
 
 // const tilesetPath = './cesiumStatic/data/SanFran_Street_level_Ferry_building/tileset.json';
 // const tilesetPath = './cesiumStatic/data/Metrostation.bim-tiles/tileset.json';
@@ -13,9 +14,11 @@ let Sidebar = (cesiumViewer) => {
   const [data, setData] = React.useState<LevelOfDetail[]>([]);
   // Format for selectedLodIndices is [lod index, tile index]
   // If tile index is -1, it means no tile was selected, just entire LOD
+  // If LOD index is also -1, it means no LOD selected, and entire tileset is loaded normally
   const [selectedLodIndices, setSelectedLodIndices] = React.useState<number[] | undefined>();
   const [tilesetUrl, setTilesetUrl] = React.useState<string | undefined>();
   const [tilesetTransform, setTilesetTransform] = React.useState<Matrix4 | undefined>();
+  const [entireTilesetLoaded, setEntireTilesetLoaded] = React.useState(false);
 
   // useEffect(() => {
   //   (async function() {
@@ -111,6 +114,55 @@ let Sidebar = (cesiumViewer) => {
   //   })()
   // }, [cesiumViewer]);
 
+  function handleLoadEntireTileset() {
+    loadEntireTileset(tilesetUrl);
+  }
+
+  async function loadEntireTileset(url: string | undefined) {
+    console.log("Loading entire tileset");
+    const { viewer } = cesiumViewer;
+    if (!viewer) {
+      console.log("viewer not found");
+      return;
+    }
+    if (!url) {
+      console.log("tilesetUrl not found");
+      return;
+    }
+
+    if (selectedLodIndices && selectedLodIndices[0] === -1) {
+      console.log('entire tileset already loaded');
+      return;
+    }
+
+    try {
+      const tileset = await Cesium3DTileset.fromUrl(url);
+      viewer.scene.primitives.add(tileset);
+      viewer.zoomTo(tileset);
+
+      const rotationMatrix = Matrix3.fromRotationZ(CesiumMath.toRadians(-90));
+      const rotationMatrix4x4 = Matrix4.fromRotationTranslation(rotationMatrix);
+      const transform = Matrix4.multiply(tileset.root.transform, rotationMatrix4x4, new Matrix4());
+      setTilesetTransform(transform);
+
+      // Reset previous selection
+      const newData = [...data];
+      if (selectedLodIndices && selectedLodIndices[0] !== -1) {
+        const lodIndex = selectedLodIndices[0];
+        newData[lodIndex].selected = false;
+        const tileIndex = selectedLodIndices[1];
+        if (tileIndex !== -1) {
+          newData[lodIndex].tiles[tileIndex].selected = false;
+        }
+      }
+
+      setSelectedLodIndices([-1, -1]);
+      setEntireTilesetLoaded(true);
+    } catch (error) {
+      console.error(`Error creating tileset: ${error}`);
+    }
+  }
+
   return (
     <div className='sidebar'>
       <div style={{ display: 'flex', gap: 6, alignItems: 'center', padding: '12px' }}>
@@ -156,19 +208,23 @@ let Sidebar = (cesiumViewer) => {
             console.log("lods:", tilesetData);
 
             // Load tileset to get transform
-            const { viewer } = cesiumViewer;
-            const tileset = await Cesium3DTileset.fromUrl(absoluteUrl);
-            viewer.zoomTo(tileset);
-
-            const rotationMatrix = Matrix3.fromRotationZ(CesiumMath.toRadians(-90));
-            const rotationMatrix4x4 = Matrix4.fromRotationTranslation(rotationMatrix);
-            const transform = Matrix4.multiply(tileset.root.transform, rotationMatrix4x4, new Matrix4());
-            setTilesetTransform(transform);
+            await loadEntireTileset(absoluteUrl);
 					}}
 				>
 					Load
 				</Button>
       </div>
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center', padding: '12px' }}>
+        <Button onClick={handleLoadEntireTileset} disabled={entireTilesetLoaded}>
+          {entireTilesetLoaded ? "Entire tileset loaded" : "Load entire tileset"}
+        </Button>
+        <div className='status-icon' style={entireTilesetLoaded ? {display: 'block'} : { display: 'none' }}>
+          <SvgStatusSuccess />
+        </div>
+      </div>
+      <Text variant='body-sm' style={{ padding: '12px' }}>
+        Or select a level of detail or tile to view:
+        </Text>
       <Tree.Root className='lod-tree' style={{ backgroundColor: 'var(--ids-color-bg-neutral-base)' }}>
         {data.map((item, index, items) => {
           const handleSelection = async () => {
@@ -182,7 +238,7 @@ let Sidebar = (cesiumViewer) => {
               const newData = [...data];
 
               // Reset previous selection
-              if (selectedLodIndices) {
+              if (selectedLodIndices && selectedLodIndices[0] !== -1) {
                 const lodIndex = selectedLodIndices[0];
                 newData[lodIndex].selected = false;
                 const tileIndex = selectedLodIndices[1];
@@ -191,6 +247,7 @@ let Sidebar = (cesiumViewer) => {
                 }
               }
               setSelectedLodIndices([index, -1]);
+              setEntireTilesetLoaded(false);
 
               newData[index].selected = true;
               setData(newData);
@@ -263,7 +320,7 @@ let Sidebar = (cesiumViewer) => {
                     const newData = [...data];
 
                     // Reset previous selection
-                    if (selectedLodIndices) {
+                    if (selectedLodIndices && selectedLodIndices[0] !== -1) {
                       const lodIndex = selectedLodIndices[0];
                       newData[lodIndex].selected = false;
                       const tileIndex = selectedLodIndices[1];
@@ -272,6 +329,7 @@ let Sidebar = (cesiumViewer) => {
                       }
                     }
                     setSelectedLodIndices([index, childIndex]);
+                    setEntireTilesetLoaded(false);
 
                     newData[index].tiles[childIndex].selected = true;
                     setData(newData);

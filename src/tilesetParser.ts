@@ -22,6 +22,8 @@ export async function parseTileset(tilesetPath: string, lods: LevelOfDetail[], b
   } else {
     absoluteUrl = new URL(tilesetPath, window.location.href);
   }
+  // Remove tileset.json from the URL to get the base path
+  // TODO preserve query string, e.g. for SAS URLs from the mesh export API
   const basePath = absoluteUrl.href.split('/').slice(0, -1).join('/') + '/';
 
   return (await parseNode(tilesetJson.root, basePath, lods, buckets, depth));
