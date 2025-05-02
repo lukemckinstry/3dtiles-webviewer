@@ -1,14 +1,8 @@
 import { Matrix4, Model, Math as CesiumMath, HeadingPitchRange, Cesium3DTileset, Matrix3 } from 'cesium';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Tooltip, Tree, Button, Label, TextBox, Text } from '@itwin/itwinui-react/bricks';
 import { parseTileset, LevelOfDetail } from '../tilesetParser';
 import { SvgStatusSuccess } from '@itwin/itwinui-icons-color-react';
-
-// const tilesetPath = './cesiumStatic/data/SanFran_Street_level_Ferry_building/tileset.json';
-// const tilesetPath = './cesiumStatic/data/Metrostation.bim-tiles/tileset.json';
-// const tilesetPath = './cesiumStatic/data/Stadium-28334163.bim-tiles/tileset.json';
-// const tilesetPath = './cesiumStatic/data/04_Plant_Geo.bim-tiles/tileset.json';
-// const tilesetPath = './cesiumStatic/data/ClubHouse.bim-tiles/tileset.json';
 
 let Sidebar = (cesiumViewer) => {
   const [data, setData] = React.useState<LevelOfDetail[]>([]);
@@ -20,122 +14,64 @@ let Sidebar = (cesiumViewer) => {
   const [tilesetTransform, setTilesetTransform] = React.useState<Matrix4 | undefined>();
   const [entireTilesetLoaded, setEntireTilesetLoaded] = React.useState(false);
 
-  // useEffect(() => {
-  //   (async function() {
-  //     const { viewer } = cesiumViewer;
-  //     if (!viewer?.scene) {
-  //       return;
-  //     }
+  /**
+   * Zoom in on a model. camera.lookAt might restrict camera panning
+   */
+  function zoomToModel(model, viewer) {
+    const camera = viewer.camera;
 
-  //     const lods: LevelOfDetail[] = [];
-  //     const tileset = await Cesium3DTileset.fromUrl(tilesetPath);
+    const controller = viewer.scene.screenSpaceCameraController;
+    const r = 2.0 * Math.max(model.boundingSphere.radius, camera.frustum.near);
+    controller.minimumZoomDistance = r * 0.5;
 
-  //     // ITwinPlatform.apiEndpoint = "https://qa-ims.bentley.com/";
-  //     // ITwinPlatform.defaultAccessToken = "";
-  //     // const tileset = await ITwinData.createTilesetFromIModelId(
-  //     //   "",
-  //     // );
-
-  //     if (!tileset) {
-  //       return;
-  //     }
-
-  //     // tileset.skipLevelOfDetail = false;
-  //     // tileset.maximumScreenSpaceError = 0;
-  //     // tileset.preloadWhenHidden = true;
-  //     // tileset.show = false;
-  //     // tileset.maximumCacheOverflowBytes = 536870912 * 10;
-
-  //     // Combine the transforms
-  //     const rotationMatrix = Matrix3.fromRotationZ(CesiumMath.toRadians(-90));
-  //     const rotationMatrix4x4 = Matrix4.fromRotationTranslation(rotationMatrix);
-  //     globalTransform = Matrix4.multiply(tileset.root.transform, rotationMatrix4x4, new Matrix4());
-
-  //     // viewer.scene.primitives.add(tileset);
-  //     // viewer.zoomTo(tileset);
-
-  //     function trackTile(tile: any) {
-  //       const level = parseInt(tile._depth);
-  //       const index = level - 1;
-  //       // Get just tile name, without full URL and query string
-  //       const displayName = tile.content.url.split('/').pop().split('?')[0];
-  //       const tileData = {
-  //         displayName: displayName,
-  //         uri: tile.content.url,
-  //         selected: false,
-  //         geometricError: tile.geometricError,
-  //       };
-
-  //       if (lods[index]) {
-  //         lods[index].tiles.push(tileData);
-  //       } else {
-  //         lods[index] = {
-  //           level: level,
-  //           expanded: false,
-  //           selected: false,
-  //           tiles: [ tileData ],
-  //         };
-  //       }
-  //     }
-  //     // tileset.tileLoad.addEventListener(trackTile);
-
-  //     // tileset.allTilesLoaded.addEventListener(() => {
-  //     //   if (!tilesetLoaded) {
-  //     //     tileset.tileLoad.removeEventListener(trackTile);
-  //     //     console.log("all tiles loaded. lods from event listening:", lods);
-  //     //     // setData(lods);
-  //     //     tilesetLoaded = true;
-  //     //   }
-
-  //     // //   // Weird issue where the tiles recorded with trackTile are not the same as
-  //     // //   // the tiles parsed in tilesetData - trackTile is missing some
-
-  //     // //   // console.log("comparing with parsed data...");
-  //     // //   // for (let i = 1; i < lods.length; i++) {
-  //     // //   //   if (lods[i + 2] && lods[i + 2].tiles.length !== tilesetData[i].tiles.length) {
-  //     // //   //     console.log("parsed tileset data and event tileset data do not match at level", i);
-
-  //     // //   //     if (i < 4) {
-  //     // //   //       for (let j = 0; j < tilesetData[i].tiles.length; j++) {
-  //     // //   //         const tile = tilesetData[i].tiles[j];
-  //     // //   //         const found = lods[i + 2].tiles.find((t) => {
-  //     // //   //           const tileUri = t.uri.split('/').slice(-2).join('/');
-  //     // //   //           return tileUri === tile.uri;
-  //     // //   //         });
-  //     // //   //         if (!found) {
-  //     // //   //           console.log("missing tile", tile.uri, "at level", i);
-  //     // //   //         }
-  //     // //   //       }
-  //     // //   //     }
-  //     // //   //   }
-  //     // //   // }
-
-  //     // });
-  //   })()
-  // }, [cesiumViewer]);
-
-  function handleLoadEntireTileset() {
-    loadEntireTileset(tilesetUrl);
+    const center = model.boundingSphere.center;
+    const heading = CesiumMath.toRadians(230.0);
+    const pitch = CesiumMath.toRadians(-20.0);
+    camera.lookAt(center, new HeadingPitchRange(heading, pitch, r * 7.0));
   }
 
-  async function loadEntireTileset(url: string | undefined) {
+  /**
+   * Reset the previously selected LOD and tile to an unselected state, based on the index in selectedLodIndices
+   */
+  function resetSelection() {
+    const newData = [...data];
+    if (selectedLodIndices && selectedLodIndices[0] !== -1) {
+      const lodIndex = selectedLodIndices[0];
+      newData[lodIndex].selected = false;
+      const tileIndex = selectedLodIndices[1];
+      if (tileIndex !== -1) {
+        newData[lodIndex].tiles[tileIndex].selected = false;
+      }
+    }
+  }
+
+  /**
+   * Called when the "Load entire tileset" button is clicked
+   */
+  async function handleLoadEntireTileset() {
+    if (tilesetUrl) {
+      await loadEntireTileset(tilesetUrl);
+    } else {
+      console.log("No tileset URL provided");
+    }
+  }
+
+  /**
+   * Load the entire tileset from the URL. The tileset is loaded in the standard way through a Cesium3DTileset object,
+   * not as glTF models like the LODs and individual tiles.
+   * This function also sets the transform matrix in the tilesetTransform state variable, which is later applied to
+   * individual glTF models when they are loaded.
+   */
+  async function loadEntireTileset(url: string) {
     console.log("Loading entire tileset");
-    const { viewer } = cesiumViewer;
-    if (!viewer) {
-      console.log("viewer not found");
-      return;
-    }
-    if (!url) {
-      console.log("tilesetUrl not found");
-      return;
-    }
 
     if (selectedLodIndices && selectedLodIndices[0] === -1) {
-      console.log('entire tileset already loaded');
+      console.log('Entire tileset already loaded');
       return;
     }
 
     try {
+      const { viewer } = cesiumViewer;
       const tileset = await Cesium3DTileset.fromUrl(url);
       viewer.scene.primitives.add(tileset);
       viewer.zoomTo(tileset);
@@ -145,16 +81,7 @@ let Sidebar = (cesiumViewer) => {
       const transform = Matrix4.multiply(tileset.root.transform, rotationMatrix4x4, new Matrix4());
       setTilesetTransform(transform);
 
-      // Reset previous selection
-      const newData = [...data];
-      if (selectedLodIndices && selectedLodIndices[0] !== -1) {
-        const lodIndex = selectedLodIndices[0];
-        newData[lodIndex].selected = false;
-        const tileIndex = selectedLodIndices[1];
-        if (tileIndex !== -1) {
-          newData[lodIndex].tiles[tileIndex].selected = false;
-        }
-      }
+      resetSelection();
 
       setSelectedLodIndices([-1, -1]);
       setEntireTilesetLoaded(true);
@@ -172,13 +99,13 @@ let Sidebar = (cesiumViewer) => {
         </TextBox.Root>
         <Button
 					onClick={async (e) => {
-            console.log('load tileset button clicked');
+            console.log('Load tileset button clicked');
             const url = (document.getElementById('tilesetUrlInput') as HTMLInputElement).value;
             if (!url) {
-              console.log('no url provided');
+              console.log('No url provided');
               return;
             }
-            console.log('loading from url', url);
+            console.log('Loading from url', url);
 
             let absoluteUrl: string;
             if (url.indexOf("://") > 0 || url.indexOf("//") === 0) {
@@ -189,7 +116,7 @@ let Sidebar = (cesiumViewer) => {
 
             // No need to reload tileset if URL is the same
             if (absoluteUrl === tilesetUrl) {
-              console.log("url is the same, not reloading tileset");
+              console.log("Url is the same, not reloading tileset");
               return;
             }
             setTilesetUrl(absoluteUrl);
@@ -198,6 +125,8 @@ let Sidebar = (cesiumViewer) => {
             if (absoluteUrl) {
               try {
                 tilesetData = await parseTileset(absoluteUrl, [], [], 0);
+                // Load tileset to get transform
+                await loadEntireTileset(absoluteUrl);
               } catch (error) {
                 console.error("Error parsing tileset:", error);
                 return;
@@ -205,10 +134,7 @@ let Sidebar = (cesiumViewer) => {
               
               setData(tilesetData);
             }
-            console.log("lods:", tilesetData);
-
-            // Load tileset to get transform
-            await loadEntireTileset(absoluteUrl);
+            console.log("Lods:", tilesetData);
 					}}
 				>
 					Load
@@ -235,20 +161,11 @@ let Sidebar = (cesiumViewer) => {
             }
 
             if (!item.selected) {
-              const newData = [...data];
-
-              // Reset previous selection
-              if (selectedLodIndices && selectedLodIndices[0] !== -1) {
-                const lodIndex = selectedLodIndices[0];
-                newData[lodIndex].selected = false;
-                const tileIndex = selectedLodIndices[1];
-                if (tileIndex !== -1) {
-                  newData[lodIndex].tiles[tileIndex].selected = false;
-                }
-              }
+              resetSelection();
               setSelectedLodIndices([index, -1]);
               setEntireTilesetLoaded(false);
 
+              const newData = [...data];
               newData[index].selected = true;
               setData(newData);
             }
@@ -272,17 +189,7 @@ let Sidebar = (cesiumViewer) => {
             }
 
             model.readyEvent.addEventListener(() => {
-              const camera = viewer.camera;
-
-              // Zoom to model
-              const controller = viewer.scene.screenSpaceCameraController;
-              const r = 2.0 * Math.max(model.boundingSphere.radius, camera.frustum.near);
-              controller.minimumZoomDistance = r * 0.5;
-
-              const center = model.boundingSphere.center;
-              const heading = CesiumMath.toRadians(230.0);
-              const pitch = CesiumMath.toRadians(-20.0);
-              camera.lookAt(center, new HeadingPitchRange(heading, pitch, r * 7.0));
+              zoomToModel(model, viewer);
             })
           };
           
@@ -317,20 +224,11 @@ let Sidebar = (cesiumViewer) => {
                   console.log('handleSelection', child);
 
                   if (!child.selected || (item.selected && child.selected)) {
-                    const newData = [...data];
-
-                    // Reset previous selection
-                    if (selectedLodIndices && selectedLodIndices[0] !== -1) {
-                      const lodIndex = selectedLodIndices[0];
-                      newData[lodIndex].selected = false;
-                      const tileIndex = selectedLodIndices[1];
-                      if (tileIndex !== -1) {
-                        newData[lodIndex].tiles[tileIndex].selected = false;
-                      }
-                    }
+                    resetSelection();
                     setSelectedLodIndices([index, childIndex]);
                     setEntireTilesetLoaded(false);
 
+                    const newData = [...data];
                     newData[index].tiles[childIndex].selected = true;
                     setData(newData);
                   }
@@ -347,17 +245,7 @@ let Sidebar = (cesiumViewer) => {
                       }),
                     );
                     model.readyEvent.addEventListener(() => {
-                      const camera = viewer.camera;
-
-                      // Zoom to model
-                      const controller = viewer.scene.screenSpaceCameraController;
-                      const r = 2.0 * Math.max(model.boundingSphere.radius, camera.frustum.near);
-                      controller.minimumZoomDistance = r * 0.5;
-
-                      const center = model.boundingSphere.center;
-                      const heading = CesiumMath.toRadians(230.0);
-                      const pitch = CesiumMath.toRadians(-20.0);
-                      camera.lookAt(center, new HeadingPitchRange(heading, pitch, r * 7.0));
+                      zoomToModel(model, viewer);
                     })
                   } catch (error) {
                     console.log("error", error)
