@@ -10,7 +10,7 @@ function Outer() {
       <Sidebar viewer={cesiumViewer} />
       <CesiumMap viewer={cesiumViewer} setCesiumViewer={setCesiumViewer} />
     </>
-  )
+  );
 }
 
 export default Outer;

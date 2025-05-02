@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import { Viewer as CesiumViewer, Terrain, Ion } from "cesium";
+import { Viewer as CesiumViewer, Ion } from 'cesium';
 
-const CESIUM_CONTAINER_ID = "cesiumContainer";
+const CESIUM_CONTAINER_ID = 'cesiumContainer';
 
 const CesiumMap = ({ cesiumViewer, setCesiumViewer }) => {
   const viewerContainer = useRef(null);
@@ -14,10 +14,9 @@ const CesiumMap = ({ cesiumViewer, setCesiumViewer }) => {
 
       const viewer = new CesiumViewer(
         CESIUM_CONTAINER_ID,
-        // { terrain: Terrain.fromWorldTerrain() }
       );
       setCesiumViewer(viewer);
-    }
+    };
     if (!cesiumViewer) {
       initializeGlobe();
     }

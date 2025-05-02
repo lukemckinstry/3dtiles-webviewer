@@ -46,13 +46,13 @@ let Sidebar = (cesiumViewer) => {
   }
 
   /**
-   * Called when the "Load entire tileset" button is clicked
+   * Called when the 'Load entire tileset' button is clicked
    */
   async function handleLoadEntireTileset() {
     if (tilesetUrl) {
       await loadEntireTileset(tilesetUrl);
     } else {
-      console.log("No tileset URL provided");
+      console.log('No tileset URL provided');
     }
   }
 
@@ -63,7 +63,7 @@ let Sidebar = (cesiumViewer) => {
    * individual glTF models when they are loaded.
    */
   async function loadEntireTileset(url: string) {
-    console.log("Loading entire tileset");
+    console.log('Loading entire tileset');
 
     if (selectedLodIndices && selectedLodIndices[0] === -1) {
       console.log('Entire tileset already loaded');
@@ -108,7 +108,7 @@ let Sidebar = (cesiumViewer) => {
             console.log('Loading from url', url);
 
             let absoluteUrl: string;
-            if (url.indexOf("://") > 0 || url.indexOf("//") === 0) {
+            if (url.indexOf('://') > 0 || url.indexOf('//') === 0) {
               absoluteUrl = url;
             } else {
               absoluteUrl = new URL(url, window.location.href).href;
@@ -116,7 +116,7 @@ let Sidebar = (cesiumViewer) => {
 
             // No need to reload tileset if URL is the same
             if (absoluteUrl === tilesetUrl) {
-              console.log("Url is the same, not reloading tileset");
+              console.log('Url is the same, not reloading tileset');
               return;
             }
             setTilesetUrl(absoluteUrl);
@@ -128,13 +128,13 @@ let Sidebar = (cesiumViewer) => {
                 // Load tileset to get transform
                 await loadEntireTileset(absoluteUrl);
               } catch (error) {
-                console.error("Error parsing tileset:", error);
+                console.error('Error parsing tileset:', error);
                 return;
               }
               
               setData(tilesetData);
             }
-            console.log("Lods:", tilesetData);
+            console.log('Lods:', tilesetData);
 					}}
 				>
 					Load
@@ -142,7 +142,7 @@ let Sidebar = (cesiumViewer) => {
       </div>
       <div style={{ display: 'flex', gap: 6, alignItems: 'center', padding: '12px' }}>
         <Button onClick={handleLoadEntireTileset} disabled={entireTilesetLoaded}>
-          {entireTilesetLoaded ? "Entire tileset loaded" : "Load entire tileset"}
+          {entireTilesetLoaded ? 'Entire tileset loaded' : 'Load entire tileset'}
         </Button>
         <div className='status-icon' style={entireTilesetLoaded ? {display: 'block'} : { display: 'none' }}>
           <SvgStatusSuccess />
@@ -154,7 +154,7 @@ let Sidebar = (cesiumViewer) => {
       <Tree.Root className='lod-tree' style={{ backgroundColor: 'var(--ids-color-bg-neutral-base)' }}>
         {data.map((item, index, items) => {
           const handleSelection = async () => {
-            console.log("handleSelection", item);
+            console.log('handleSelection', item);
             
             if (!item.expanded) {
               handleExpanded();
@@ -184,7 +184,7 @@ let Sidebar = (cesiumViewer) => {
                   }),
                 );
               } catch (error) {
-                console.log("error", error);
+                console.log('error', error);
               }
             }
 
@@ -248,13 +248,13 @@ let Sidebar = (cesiumViewer) => {
                       zoomToModel(model, viewer);
                     })
                   } catch (error) {
-                    console.log("error", error)
+                    console.log('error', error)
                   }
                 };
 
                 const tooltipContent = `Filename: ${child.uri}\nGeometric error: ${child.geometricError}`;
 
-                return <Tooltip content={tooltipContent} style={{ wordBreak: "break-word", maxWidth: "500px", whiteSpace: "pre-wrap" }} key={child.uri}>
+                return <Tooltip content={tooltipContent} style={{ wordBreak: 'break-word', maxWidth: '500px', whiteSpace: 'pre-wrap' }} key={child.uri}>
                     <Tree.Item
                       key={child.uri}
                       aria-level={2}

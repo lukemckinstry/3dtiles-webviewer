@@ -17,7 +17,7 @@ export async function parseTileset(tilesetPath: string, lods: LevelOfDetail[], b
   const tilesetJson = await response.json();
 
   let absoluteUrl: URL;
-  if (tilesetPath.indexOf("://") > 0 || tilesetPath.indexOf("//") === 0) {
+  if (tilesetPath.indexOf('://') > 0 || tilesetPath.indexOf('//') === 0) {
     absoluteUrl = new URL(tilesetPath);
   } else {
     absoluteUrl = new URL(tilesetPath, window.location.href);

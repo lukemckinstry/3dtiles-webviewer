@@ -1,12 +1,12 @@
-import react from '@vitejs/plugin-react'
+import react from '@vitejs/plugin-react';
 
-import { defineConfig } from "vite";
-import { viteStaticCopy } from "vite-plugin-static-copy";
+import { defineConfig } from 'vite';
+import { viteStaticCopy } from 'vite-plugin-static-copy';
 
-const cesiumSource = "node_modules/cesium/Build/Cesium";
+const cesiumSource = 'node_modules/cesium/Build/Cesium';
 // This is the base url for static files that CesiumJS needs to load.
 // Set to an empty string to place the files at the site's root path
-const cesiumBaseUrl = "cesiumStatic";
+const cesiumBaseUrl = 'cesiumStatic';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -27,7 +27,7 @@ export default defineConfig({
         { src: `${cesiumSource}/Assets`, dest: cesiumBaseUrl },
         { src: `${cesiumSource}/Widgets`, dest: cesiumBaseUrl },
         // Also copy test tileset data
-        { src: `data`, dest: cesiumBaseUrl },
+        { src: 'data', dest: cesiumBaseUrl },
       ],
     }),
   ],
