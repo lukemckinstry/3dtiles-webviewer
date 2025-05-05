@@ -92,66 +92,68 @@ let Sidebar = (cesiumViewer) => {
 
   return (
     <div className='sidebar'>
-      <div style={{ display: 'flex', gap: 6, alignItems: 'center', padding: '12px' }}>
-        <Label>Tileset URL</Label>
-        <TextBox.Root>
-          <TextBox.Input id={'tilesetUrlInput'} />
-        </TextBox.Root>
-        <Button
-					onClick={async (e) => {
-            console.log('Load tileset button clicked');
-            const url = (document.getElementById('tilesetUrlInput') as HTMLInputElement).value;
-            if (!url) {
-              console.log('No url provided');
-              return;
-            }
-            console.log('Loading from url', url);
-
-            let absoluteUrl: string;
-            if (url.indexOf('://') > 0 || url.indexOf('//') === 0) {
-              absoluteUrl = url;
-            } else {
-              absoluteUrl = new URL(url, window.location.href).href;
-            }
-
-            // No need to reload tileset if URL is the same
-            if (absoluteUrl === tilesetUrl) {
-              console.log('Url is the same, not reloading tileset');
-              return;
-            }
-            setTilesetUrl(absoluteUrl);
-
-            let tilesetData: LevelOfDetail[] = [];
-            if (absoluteUrl) {
-              try {
-                tilesetData = await parseTileset(absoluteUrl, [], [], 0);
-                // Load tileset to get transform
-                await loadEntireTileset(absoluteUrl);
-              } catch (error) {
-                console.error('Error parsing tileset:', error);
+      <div style={{ height: '140px' }}>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', padding: '12px' }}>
+          <Label>Tileset URL</Label>
+          <TextBox.Root>
+            <TextBox.Input id={'tilesetUrlInput'} />
+          </TextBox.Root>
+          <Button
+            onClick={async (e) => {
+              console.log('Load tileset button clicked');
+              const url = (document.getElementById('tilesetUrlInput') as HTMLInputElement).value;
+              if (!url) {
+                console.log('No url provided');
                 return;
               }
-              
-              setData(tilesetData);
-            }
-            console.log('Lods:', tilesetData);
-					}}
-				>
-					Load
-				</Button>
-      </div>
-      <div style={{ display: 'flex', gap: 6, alignItems: 'center', padding: '12px' }}>
-        <Button onClick={handleLoadEntireTileset} disabled={entireTilesetLoaded}>
-          {entireTilesetLoaded ? 'Entire tileset loaded' : 'Load entire tileset'}
-        </Button>
-        <div className='status-icon' style={entireTilesetLoaded ? {display: 'block'} : { display: 'none' }}>
-          <SvgStatusSuccess />
+              console.log('Loading from url', url);
+
+              let absoluteUrl: string;
+              if (url.indexOf('://') > 0 || url.indexOf('//') === 0) {
+                absoluteUrl = url;
+              } else {
+                absoluteUrl = new URL(url, window.location.href).href;
+              }
+
+              // No need to reload tileset if URL is the same
+              if (absoluteUrl === tilesetUrl) {
+                console.log('Url is the same, not reloading tileset');
+                return;
+              }
+              setTilesetUrl(absoluteUrl);
+
+              let tilesetData: LevelOfDetail[] = [];
+              if (absoluteUrl) {
+                try {
+                  tilesetData = await parseTileset(absoluteUrl, [], [], 0);
+                  // Load tileset to get transform
+                  await loadEntireTileset(absoluteUrl);
+                } catch (error) {
+                  console.error('Error parsing tileset:', error);
+                  return;
+                }
+                
+                setData(tilesetData);
+              }
+              console.log('Lods:', tilesetData);
+            }}
+          >
+            Load
+          </Button>
         </div>
-      </div>
-      <Text variant='body-sm' style={{ padding: '12px' }}>
-        Or select a level of detail or tile to view:
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', padding: '12px' }}>
+          <Button onClick={handleLoadEntireTileset} disabled={entireTilesetLoaded}>
+            {entireTilesetLoaded ? 'Entire tileset loaded' : 'Load entire tileset'}
+          </Button>
+          <div className='status-icon' style={entireTilesetLoaded ? {display: 'block'} : { display: 'none' }}>
+            <SvgStatusSuccess />
+          </div>
+        </div>
+        <Text variant='body-sm' style={{ padding: '12px' }}>
+          Or select a level of detail or tile to view:
         </Text>
-      <Tree.Root className='lod-tree' style={{ backgroundColor: 'var(--ids-color-bg-neutral-base)' }}>
+      </div>
+      <Tree.Root style={{ backgroundColor: 'var(--ids-color-bg-neutral-base)', height: 'calc(100vh - 140px)' }}>
         {data.map((item, index, items) => {
           const handleSelection = async () => {
             console.log('handleSelection', item);
