@@ -1,20 +1,24 @@
 import React, { useEffect, useRef } from 'react';
-import { Viewer as CesiumViewer, Entity, TerrainProvider } from "cesium";
+import { Viewer as CesiumViewer, Ion } from 'cesium';
 
-const CESIUM_CONTAINER_ID = "cesiumContainer";
+const CESIUM_CONTAINER_ID = 'cesiumContainer';
 
 const CesiumMap = ({ cesiumViewer, setCesiumViewer }) => {
   const viewerContainer = useRef(null);
-  //const [cesiumViewer, setCesiumViewer] = useState();
 
   useEffect(() => {
-
     const initializeGlobe = () => {
-      const viewer = new CesiumViewer(CESIUM_CONTAINER_ID);
-      setCesiumViewer(viewer) 
-    }
-    if (!cesiumViewer ) {
-      initializeGlobe()
+      const ionToken = import.meta.env.VITE_ION_TOKEN;
+      if (ionToken)
+        Ion.defaultAccessToken = ionToken;
+
+      const viewer = new CesiumViewer(
+        CESIUM_CONTAINER_ID,
+      );
+      setCesiumViewer(viewer);
+    };
+    if (!cesiumViewer) {
+      initializeGlobe();
     }
   }, [cesiumViewer, setCesiumViewer]);
 

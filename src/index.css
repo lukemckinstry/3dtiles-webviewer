@@ -1,27 +1,9 @@
 #cesiumContainer {
   position: absolute !important;
-  left: 330px;
-  top: 47px;
+  left: 400px;
+  top: 0;
   bottom: 0;
   right: 0;
-}
-
-
-
-#sidebar {
-  background-color: #fff;
-  position: absolute;
-  top: 47px;
-  left: 0;
-  bottom: 0;
-  margin-left: auto;
-  margin-right: auto;
-  z-index: 1;
-  width: 330px;
-  overflow: none;
-  overflow-y:auto;
-  box-shadow: 0 0 0 1px rgba(16, 22, 26, 0.1), 0 1px 1px rgba(16, 22, 26, 0.2),
-    0 2px 6px rgba(16, 22, 26, 0.2);
 }
 
 .header {
@@ -51,7 +33,7 @@
 }
 
 .sidebar {
-  margin-top: 47px;
+  width: 400px;
   height: 100vh;
-  overflow: scroll;
+  background-color: var(--ids-color-bg-neutral-base);
 }

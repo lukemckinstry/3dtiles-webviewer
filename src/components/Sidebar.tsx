@@ -1,157 +1,277 @@
-import React, { useMemo } from 'react';
-import { Tree } from '@itwin/itwinui-react/bricks';
+import { Matrix4, Model, Math as CesiumMath, HeadingPitchRange, Cesium3DTileset, Matrix3 } from 'cesium';
+import React from 'react';
+import { Tooltip, Tree, Button, Label, TextBox, Text } from '@itwin/itwinui-react/bricks';
 import { parseTileset, LevelOfDetail } from '../tilesetParser';
-
-import { Matrix4, Model, Math as CesiumMath, HeadingPitchRange } from "cesium";
-
-
-const tilesetPath = './cesiumStatic/data/SanFran_Street_level_Ferry_building/tileset.json';
-const tilesetData = await parseTileset(tilesetPath, []);
-// console.log(tilesetData);
-
-const testData = [
-  {
-    id: 'Node-0',
-    label: 'Node 0',
-    selected: false,
-    expanded: true,
-  },
-  {
-    id: 'Node-1',
-    label: 'Node 1',
-    selected: false,
-    expanded: true,
-    subItems: [{ id: 'Subnode-1', label: 'Subnode 1', selected: false }],
-  },
-  {
-    id: 'Node-2',
-    label: 'Node 2',
-    selected: false,
-    expanded: true,
-    subItems: [{ id: 'Subnode-2', label: 'Subnode 2', selected: false }],
-  },
-];
+import { SvgStatusSuccess } from '@itwin/itwinui-icons-color-react';
 
 let Sidebar = (cesiumViewer) => {
-  const [data, setData] = React.useState(tilesetData);
+  const [data, setData] = React.useState<LevelOfDetail[]>([]);
+  // Format for selectedLodIndices is [lod index, tile index]
+  // If tile index is -1, it means no tile was selected, just entire LOD
+  // If LOD index is also -1, it means no LOD selected, and entire tileset is loaded normally
+  const [selectedLodIndices, setSelectedLodIndices] = React.useState<number[] | undefined>();
+  const [tilesetUrl, setTilesetUrl] = React.useState<string | undefined>();
+  const [tilesetTransform, setTilesetTransform] = React.useState<Matrix4 | undefined>();
+  const [entireTilesetLoaded, setEntireTilesetLoaded] = React.useState(false);
 
-  console.log("Sidebar cesiumViewer ", cesiumViewer)
+  /**
+   * Zoom in on a model. camera.lookAt might restrict camera panning
+   */
+  function zoomToModel(model, viewer) {
+    const camera = viewer.camera;
+
+    const controller = viewer.scene.screenSpaceCameraController;
+    const r = 2.0 * Math.max(model.boundingSphere.radius, camera.frustum.near);
+    controller.minimumZoomDistance = r * 0.5;
+
+    const center = model.boundingSphere.center;
+    const heading = CesiumMath.toRadians(230.0);
+    const pitch = CesiumMath.toRadians(-20.0);
+    camera.lookAt(center, new HeadingPitchRange(heading, pitch, r * 7.0));
+  }
+
+  /**
+   * Reset the previously selected LOD and tile to an unselected state, based on the index in selectedLodIndices
+   */
+  function resetSelection() {
+    const newData = [...data];
+    if (selectedLodIndices && selectedLodIndices[0] !== -1) {
+      const lodIndex = selectedLodIndices[0];
+      newData[lodIndex].selected = false;
+      const tileIndex = selectedLodIndices[1];
+      if (tileIndex !== -1) {
+        newData[lodIndex].tiles[tileIndex].selected = false;
+      }
+    }
+  }
+
+  /**
+   * Called when the 'Load entire tileset' button is clicked
+   */
+  async function handleLoadEntireTileset() {
+    if (tilesetUrl) {
+      await loadEntireTileset(tilesetUrl);
+    } else {
+      console.log('No tileset URL provided');
+    }
+  }
+
+  /**
+   * Load the entire tileset from the URL. The tileset is loaded in the standard way through a Cesium3DTileset object,
+   * not as glTF models like the LODs and individual tiles.
+   * This function also sets the transform matrix in the tilesetTransform state variable, which is later applied to
+   * individual glTF models when they are loaded.
+   */
+  async function loadEntireTileset(url: string) {
+    console.log('Loading entire tileset');
+
+    if (selectedLodIndices && selectedLodIndices[0] === -1) {
+      console.log('Entire tileset already loaded');
+      return;
+    }
+
+    try {
+      const { viewer } = cesiumViewer;
+      const tileset = await Cesium3DTileset.fromUrl(url);
+      viewer.scene.primitives.add(tileset);
+      viewer.zoomTo(tileset);
+
+      const rotationMatrix = Matrix3.fromRotationZ(CesiumMath.toRadians(-90));
+      const rotationMatrix4x4 = Matrix4.fromRotationTranslation(rotationMatrix);
+      const transform = Matrix4.multiply(tileset.root.transform, rotationMatrix4x4, new Matrix4());
+      setTilesetTransform(transform);
+
+      resetSelection();
+
+      setSelectedLodIndices([-1, -1]);
+      setEntireTilesetLoaded(true);
+    } catch (error) {
+      console.error(`Error creating tileset: ${error}`);
+    }
+  }
 
   return (
     <div className='sidebar'>
-    <Tree.Root>
-      {data.map((item, index, items) => {
-        const handleSelection = async () => {
-          console.log("tiles ", item.tiles)
-          const gltfPos = [0.8443837640659682, -0.5357387973460459, 0.0, 0.0, 0.32832660036003297, 0.5174791372742712, 0.7902005985709575, 0.0, -0.42334111834053034, -0.667232555788526, 0.6128482797708588, 0.0, -2703514.1639288412, -4261038.79165873, 3887533.1514879903, 1.0];
-          let transformToRoot = Matrix4.unpack(gltfPos);
-          const prefix = "./cesiumStatic/data/SanFran_Street_level_Ferry_building/";
-          const tNames = item.tiles.map(x => x.uri)
-          const {viewer} = cesiumViewer;
-          console.log("viewer ", viewer)
-          let model;
-          for (const tU of tNames) {
-            const modelURL = prefix.concat(tU)
-            try {
-              model = viewer.scene.primitives.add(
-                await Model.fromGltfAsync({
-                  url: modelURL,
-                  modelMatrix: transformToRoot,
-                }),
-              );
-            } catch (error) {
-              console.log("error ", error)
-            }
-          }
-          model.readyEvent.addEventListener(() => {
-            console.log("model ", model  );
-            const camera = viewer.camera;
+      <div style={{ height: '140px' }}>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', padding: '12px' }}>
+          <Label>Tileset URL</Label>
+          <TextBox.Root>
+            <TextBox.Input id={'tilesetUrlInput'} />
+          </TextBox.Root>
+          <Button
+            onClick={async (e) => {
+              console.log('Load tileset button clicked');
+              const url = (document.getElementById('tilesetUrlInput') as HTMLInputElement).value;
+              if (!url) {
+                console.log('No url provided');
+                return;
+              }
+              console.log('Loading from url', url);
 
-            // Zoom to model
-            const controller = viewer.scene.screenSpaceCameraController;
-            const r = 2.0 * Math.max(model.boundingSphere.radius, camera.frustum.near);
-            controller.minimumZoomDistance = r * 0.5;
+              let absoluteUrl: string;
+              if (url.indexOf('://') > 0 || url.indexOf('//') === 0) {
+                absoluteUrl = url;
+              } else {
+                absoluteUrl = new URL(url, window.location.href).href;
+              }
 
-            const center = model.boundingSphere.center;
-            const heading = CesiumMath.toRadians(230.0);
-            const pitch = CesiumMath.toRadians(-20.0);
-            camera.lookAt(center, new HeadingPitchRange(heading, pitch, r * 7.0));
-          })
-        };
-        
-        const handleExpanded = () => {
-          console.log('handleExpanded');
-          // const oldExpanded = data[index].expanded;
-          // if (oldExpanded === undefined) return;
-          // const newData = [...data];
-          // newData[index].expanded = !oldExpanded;
-          // setData(newData);
-        }
+              // No need to reload tileset if URL is the same
+              if (absoluteUrl === tilesetUrl) {
+                console.log('Url is the same, not reloading tileset');
+                return;
+              }
+              setTilesetUrl(absoluteUrl);
 
-        return (
-          <React.Fragment key={item.level}>
-            <Tree.Item
-              key={item.level}
-              aria-level={1}
-              aria-posinset={index + 1}
-              aria-setsize={items.length}
-              label={item.level}
-              selected={item.selected}
-              expanded={item.expanded}
-              onSelectedChange={handleSelection}
-              onExpandedChange={handleExpanded}
-            />
-            {item.tiles.map((child, childIndex, children) => {
-              if (!item.expanded) return null;
-
-              const handleSelection = async () => {
-                console.log('handleSelection', child.uri );
-                const gltfPos = [0.8443837640659682, -0.5357387973460459, 0.0, 0.0, 0.32832660036003297, 0.5174791372742712, 0.7902005985709575, 0.0, -0.42334111834053034, -0.667232555788526, 0.6128482797708588, 0.0, -2703514.1639288412, -4261038.79165873, 3887533.1514879903, 1.0];
-                let transformToRoot = Matrix4.unpack(gltfPos);
-                const prefix = "./cesiumStatic/data/SanFran_Street_level_Ferry_building/";
-                const modelURL = prefix.concat(child.uri)
-                const {viewer} = cesiumViewer;
-                console.log("viewer ", viewer)
+              let tilesetData: LevelOfDetail[] = [];
+              if (absoluteUrl) {
                 try {
-                  const model = viewer.scene.primitives.add(
-                    await Model.fromGltfAsync({
-                      url: modelURL,
-                      modelMatrix: transformToRoot,
-                    }),
-                  );
-                  model.readyEvent.addEventListener(() => {
-                    console.log("model ", model  );
-                    const camera = viewer.camera;
-
-                    // Zoom to model
-                    const controller = viewer.scene.screenSpaceCameraController;
-                    const r = 2.0 * Math.max(model.boundingSphere.radius, camera.frustum.near);
-                    controller.minimumZoomDistance = r * 0.5;
-
-                    const center = model.boundingSphere.center;
-                    const heading = CesiumMath.toRadians(230.0);
-                    const pitch = CesiumMath.toRadians(-20.0);
-                    camera.lookAt(center, new HeadingPitchRange(heading, pitch, r * 7.0));
-                  })
+                  tilesetData = await parseTileset(absoluteUrl, [], [], 0);
+                  // Load tileset to get transform
+                  await loadEntireTileset(absoluteUrl);
                 } catch (error) {
-                  console.log("error ", error)
+                  console.error('Error parsing tileset:', error);
+                  return;
                 }
-              };
+                
+                setData(tilesetData);
+              }
+              console.log('Lods:', tilesetData);
+            }}
+          >
+            Load
+          </Button>
+        </div>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', padding: '12px' }}>
+          <Button onClick={handleLoadEntireTileset} disabled={entireTilesetLoaded}>
+            {entireTilesetLoaded ? 'Entire tileset loaded' : 'Load entire tileset'}
+          </Button>
+          <div className='status-icon' style={entireTilesetLoaded ? {display: 'block'} : { display: 'none' }}>
+            <SvgStatusSuccess />
+          </div>
+        </div>
+        <Text variant='body-sm' style={{ padding: '12px' }}>
+          Or select a level of detail or tile to view:
+        </Text>
+      </div>
+      <Tree.Root style={{ backgroundColor: 'var(--ids-color-bg-neutral-base)', height: 'calc(100vh - 140px)' }}>
+        {data.map((item, index, items) => {
+          const handleSelection = async () => {
+            console.log('handleSelection', item);
+            
+            if (!item.expanded) {
+              handleExpanded();
+            }
 
-              return <Tree.Item
-                key={child.uri}
-                aria-level={2}
-                aria-posinset={childIndex + 1}
-                aria-setsize={children.length}
-                label={child.uri}
-                selected={child.selected}
+            if (!item.selected) {
+              resetSelection();
+              setSelectedLodIndices([index, -1]);
+              setEntireTilesetLoaded(false);
+
+              const newData = [...data];
+              newData[index].selected = true;
+              setData(newData);
+            }
+
+            const { viewer } = cesiumViewer;
+            // Clear previous models
+            viewer.scene.primitives.removeAll();
+
+            let model;
+            for (const tile of item.tiles) {
+              try {
+                model = viewer.scene.primitives.add(
+                  await Model.fromGltfAsync({
+                    url: tile.uri,
+                    modelMatrix: tilesetTransform,
+                  }),
+                );
+              } catch (error) {
+                console.log('error', error);
+              }
+            }
+
+            model.readyEvent.addEventListener(() => {
+              zoomToModel(model, viewer);
+            })
+          };
+          
+          const handleExpanded = () => {
+            console.log('handleExpanded');
+            const oldExpanded = data[index].expanded;
+            if (oldExpanded === undefined) return;
+            const newData = [...data];
+            newData[index].expanded = !oldExpanded;
+            setData(newData);
+          }
+
+          return (
+            <React.Fragment key={item.level}>
+              <Tree.Item
+                key={item.level}
+                aria-level={1}
+                aria-posinset={index + 1}
+                aria-setsize={items.length}
+                // Should this label be the tree depth (level) or the index?
+                // Index is geneerally same as depth, after empty levels are removed
+                label={index}
+                selected={item.selected}
+                expanded={item.expanded}
                 onSelectedChange={handleSelection}
+                onExpandedChange={handleExpanded}
               />
-            })}
-          </React.Fragment>
-        );
-      })}
-    </Tree.Root>
+              {item.tiles.map((child, childIndex, children) => {
+                if (!item.expanded) return null;
+
+                const handleSelection = async () => {
+                  console.log('handleSelection', child);
+
+                  if (!child.selected || (item.selected && child.selected)) {
+                    resetSelection();
+                    setSelectedLodIndices([index, childIndex]);
+                    setEntireTilesetLoaded(false);
+
+                    const newData = [...data];
+                    newData[index].tiles[childIndex].selected = true;
+                    setData(newData);
+                  }
+
+                  const { viewer } = cesiumViewer;
+                  // Clear previous models
+                  viewer.scene.primitives.removeAll();
+
+                  try {
+                    const model = viewer.scene.primitives.add(
+                      await Model.fromGltfAsync({
+                        url: child.uri,
+                        modelMatrix: tilesetTransform,
+                      }),
+                    );
+                    model.readyEvent.addEventListener(() => {
+                      zoomToModel(model, viewer);
+                    })
+                  } catch (error) {
+                    console.log('error', error)
+                  }
+                };
+
+                const tooltipContent = `Filename: ${child.uri}\nGeometric error: ${child.geometricError}`;
+
+                return <Tooltip content={tooltipContent} style={{ wordBreak: 'break-word', maxWidth: '500px', whiteSpace: 'pre-wrap' }} key={child.uri}>
+                    <Tree.Item
+                      key={child.uri}
+                      aria-level={2}
+                      aria-posinset={childIndex + 1}
+                      aria-setsize={children.length}
+                      label={child.displayName}
+                      selected={child.selected}
+                      onSelectedChange={handleSelection}
+                    />
+                  </Tooltip>
+              })}
+            </React.Fragment>
+          );
+        })}
+      </Tree.Root>
     </div>
   )
 }

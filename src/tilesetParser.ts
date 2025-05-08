@@ -2,50 +2,72 @@ export interface LevelOfDetail {
   level: number,
   expanded: boolean,
   selected: boolean,
-  tiles: {
-    uri: string,
-    selected: boolean
-  }[]
+  tiles: Tile[]
 }
 
-export async function parseTileset(path: string, lods: LevelOfDetail[]): Promise<LevelOfDetail[]> {
-  const tilesetJson = await fetch(path).then((response) => response.json());
+export interface Tile {
+  displayName: string,
+  uri: string,
+  selected: boolean,
+  geometricError?: number,
+}
 
-  for (const child of tilesetJson.root.children) {
-    if (child.content.uri.endsWith('.json')) {
-      // Read that tileset
-      const path = `cesiumStatic/SanFran_Street_level_Ferry_building/${child.content.uri}`;
-      lods = await parseTileset(path, lods);
+export async function parseTileset(tilesetPath: string, lods: LevelOfDetail[], buckets: number[], depth: number): Promise<LevelOfDetail[]> {
+  const response = await fetch(tilesetPath);
+  const tilesetJson = await response.json();
+
+  let absoluteUrl: URL;
+  if (tilesetPath.indexOf('://') > 0 || tilesetPath.indexOf('//') === 0) {
+    absoluteUrl = new URL(tilesetPath);
+  } else {
+    absoluteUrl = new URL(tilesetPath, window.location.href);
+  }
+  // Remove tileset.json from the URL to get the base path
+  // TODO preserve query string, e.g. for SAS URLs from the mesh export API
+  const basePath = absoluteUrl.href.split('/').slice(0, -1).join('/') + '/';
+
+  return (await parseNode(tilesetJson.root, basePath, lods, buckets, depth));
+}
+
+async function parseNode(node: any, basePath: string, lods: LevelOfDetail[], buckets: number[], depth: number): Promise<LevelOfDetail[]> {
+  let newDepth = depth;
+
+  if (node.content) {
+    newDepth = depth + 1;
+    const tilePath = (new URL(node.content.uri, basePath)).href;
+
+    if (node.content.uri.endsWith('.json')) {
+      // If node is another tileset.json, parse it
+      await parseTileset(tilePath, lods, buckets, newDepth);
     } else {
-      if (child.children && child.children.length > 0) {
-        lods = await parseNode(child, lods);
+      // Otherwise, add the tile to the lods array for the UI tree
+      const tile = {
+        displayName: node.content.uri,
+        uri: tilePath,
+        selected: false,
+        geometricError: node.geometricError,
+      }
+
+      const level = newDepth;
+      if (lods[level]) {
+        lods[level].tiles.push(tile);
+      } else {
+        lods[level] = {
+          level: level,
+          expanded: false,
+          selected: false,
+          tiles: [ tile ],
+        };
       }
     }
   }
 
-  // console.log(lods);
-  return lods;
-}
-
-async function parseNode(node: any, lods: LevelOfDetail[]): Promise<LevelOfDetail[]> {
-  for (const child of node.children) {
-    if (child.content.uri.endsWith('.json')) {
-      // Read that tileset
-      const path = `cesiumStatic/data/SanFran_Street_level_Ferry_building/${child.content.uri}`;
-      lods = await parseTileset(path, lods);
-    }
-
-    const uri = child.content.uri;
-    const index = Number(uri.split('/')[0]);
-
-    if (!lods[index]) {
-      lods[index] = { tiles: [], expanded: true, selected: false, level: index };
-    }
-    lods[index].tiles.push({ uri, selected: false});
-
-    if (child.children && child.children.length > 0) {
-      parseNode(child, lods);
+  if (node.children) {
+    for (const child of node.children) {
+      await parseNode(child, basePath, lods, buckets, newDepth);
     }
   }
-  return lods;
+
+  // Remove empty lods
+  return lods.filter((lod) => lod.tiles.length > 0);
 }
